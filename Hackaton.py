@@ -1,35 +1,38 @@
-import html
 import json
 import re
+import spacy
 from bs4 import BeautifulSoup
+from pathlib import Path
 
-TAG_RE = re.compile(r'<[^>]+>')
 
+replaceTags = re.compile(r'<[^>]+>')
+replaceMultipleSpaces = re.compile(r'\s{2,}')
+
+#Limpio los tags del texto, y luego los espacios multiples
 def clean_text(text):
-    return BeautifulSoup(TAG_RE.sub('', text))
+    textosintags = BeautifulSoup(replaceTags.sub(' ', text), "html.parser")
+    return replaceMultipleSpaces.sub(' ', textosintags.text)
 
 
-#for jsonFile in glob('foo/*.json'):
-jsonFile = "/home/nico/Desktop/doctrina-Civil/i0A10A3793AC7161A3F113AB6DF266BCB.json"
-data = json.load(open(jsonFile))
+nlp = spacy.load('es_core_news_md')
 
-print(clean_text(data['fulltext']))
+#Reemplazar token por query
+tokens = nlp(u'instrumentos derecho internacional')
+
+#Busco los archivos,
+for jsonFile in Path('C:/Users/nicol/Desktop/doctrina-Civil/').glob('*.json'):
+    try:
+        document = json.load(open(jsonFile))
+        fullText = nlp(clean_text(document['fulltext']))
+        title = nlp(clean_text(document['titleSuggestion']))
+        for token in tokens: #Veo similitud entre texto y titulo
+            scores = [fullText.similarity(token), title.similarity(token)]
+
+        print(document['guid'], "--", scores)
+    except:
+        print("error con doc")
 
 
 
 
 
-# nlp = spacy.load('es_core_news_sm')
-
-
-# Process whole documents
-# text = ("Hola mi nombre es Nicolas, tengo 30 años, y estoy dando una desipcrión de mi persona")
-# doc = nlp(text)
-
-# Analyze syntax
-# print("Noun phrases:", [chunk.text for chunk in doc.noun_chunks])
-# print("Verbs:", [token.lemma_ for token in doc if token.pos_ == "VERB"])
-
-# Find named entities, phrases and concepts
-# for entity in doc.ents:
-#    print(entity.text, entity.label_)
