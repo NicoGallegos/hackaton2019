@@ -1,8 +1,11 @@
 import json
 import re
 import spacy
+import operator
+
 from bs4 import BeautifulSoup
 from pathlib import Path
+from collections import OrderedDict
 
 
 replaceTags = re.compile(r'<[^>]+>')
@@ -16,19 +19,22 @@ def clean_text(text):
 
 nlp = spacy.load('es_core_news_md')
 
+query = u'instrumentos derecho internacional'
 #Reemplazar token por query
-tokens = nlp(u'instrumentos derecho internacional')
+tokens = nlp(query)
 
+data = {}
 #Busco los archivos,
-for jsonFile in Path('C:/Users/nicol/Desktop/doctrina-Civil/').glob('*.json'):
+for jsonFile in Path('doctrina-Civil/').glob('*.json'):
     try:
         document = json.load(open(jsonFile))
         fullText = nlp(clean_text(document['fulltext']))
         title = nlp(clean_text(document['titleSuggestion']))
         for token in tokens: #Veo similitud entre texto y titulo
-            scores = [fullText.similarity(token), title.similarity(token)]
-
-        print(document['guid'], "--", scores)
+            scores = [fullText.similarity(token)]
+            #scores = [ fullText.similarity(token), "titleScore:" + title.similarity(token)]
+            data[document['guid']] = scores
+        #print(document['guid'], "--", scores)
     except:
         print("error con doc")
 
@@ -36,3 +42,4 @@ for jsonFile in Path('C:/Users/nicol/Desktop/doctrina-Civil/').glob('*.json'):
 
 
 
+print(json.dumps(OrderedDict(sorted(data.items(), key=lambda t: t[1], reverse=True))))
